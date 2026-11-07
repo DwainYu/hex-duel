@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f16-e3-duplicate-unit-id",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 2, "row": 2 } },
+    { "unitId": "u1", "unitDefId": "archer", "side": "red", "position": { "col": 5, "row": 5 } }
+  ]
+}

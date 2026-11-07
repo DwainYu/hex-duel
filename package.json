@@ -1,0 +1,23 @@
+{
+  "name": "hex-duel",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "HEX DUEL：轻量化站位策略游戏（六角对位）",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7"
+  }
+}

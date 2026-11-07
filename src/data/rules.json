@@ -1,0 +1,21 @@
+{
+  "rulesVersion": "1",
+  "ticksPerSecond": 10,
+  "moveIntervalTicks": 5,
+  "timeoutTicks": 600,
+  "approximated": {
+    "note": "以下为本 MVP 采用的简化规则登记（置信度 APPROXIMATED：确定性近似，非真实 TFT 机制），逐条对应规格登记表，后续由研究轨道回填替换。引擎实际消费的规则仅上方三个正整数参数。",
+    "ref": "docs/specs/playable-core.md §APPROXIMATED 简化规则登记（可替换点）",
+    "items": [
+      { "id": "A1", "summary": "目标排序 = hex 距离升序 + unitId 平局稳定排序（真实 TFT 为六级比较序）" },
+      { "id": "A2", "summary": "无 targetPriority / 职业修正" },
+      { "id": "A3", "summary": "无相邻 Tank 重检" },
+      { "id": "A4", "summary": "攻击冷却取整：attackCooldownTicks = max(1, round(ticksPerSecond / attackSpeed))，与标称攻速存在 ≤ 半 tick 偏差" },
+      { "id": "A5", "summary": "统一移速：每 moveIntervalTicks 移动一格 + 首次移动/移动节奏模型" },
+      { "id": "A6", "summary": "直伤（无护甲/魔抗/暴击/减伤）" },
+      { "id": "A7", "summary": "攻击命中即时结算（无动画命中偏移）" },
+      { "id": "A8", "summary": "重选敌 = 重选最近（无逐格重评估细节）" },
+      { "id": "A9", "summary": "actionOrder = unitId 结算顺序，非真实 TFT 行动优先级" }
+    ]
+  }
+}

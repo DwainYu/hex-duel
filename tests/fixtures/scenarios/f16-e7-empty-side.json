@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f16-e7-empty-side",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 2, "row": 2 } }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "catalogVersion": "1",
+  "units": [
+    { "unitDefId": "sentinel-shieldguard", "name": "哨兵-盾卫", "role": "tank", "hp": 900, "ad": 45, "attackSpeed": 0.7, "range": 1 },
+    { "unitDefId": "stonewall-guardian", "name": "石墙卫士", "role": "tank", "hp": 1100, "ad": 35, "attackSpeed": 0.6, "range": 1 },
+    { "unitDefId": "gale-swordsman", "name": "疾风剑士", "role": "melee-dps", "hp": 650, "ad": 70, "attackSpeed": 1.0, "range": 1 },
+    { "unitDefId": "berserker", "name": "狂徒", "role": "melee-dps", "hp": 550, "ad": 85, "attackSpeed": 0.9, "range": 1 },
+    { "unitDefId": "warhammer-warrior", "name": "重锤武士", "role": "melee-dps", "hp": 800, "ad": 95, "attackSpeed": 0.5, "range": 1 },
+    { "unitDefId": "archer", "name": "弓手", "role": "ranged-dps", "hp": 450, "ad": 55, "attackSpeed": 0.9, "range": 3 },
+    { "unitDefId": "ballista-gunner", "name": "弩炮手", "role": "ranged-dps", "hp": 400, "ad": 65, "attackSpeed": 0.7, "range": 4 },
+    { "unitDefId": "staff-apprentice", "name": "法杖学徒", "role": "ranged-dps", "hp": 380, "ad": 50, "attackSpeed": 0.8, "range": 3 },
+    { "unitDefId": "hunter", "name": "游猎者", "role": "ranged-dps", "hp": 420, "ad": 48, "attackSpeed": 1.1, "range": 2 },
+    { "unitDefId": "medic", "name": "医护兵", "role": "support", "hp": 500, "ad": 30, "attackSpeed": 0.8, "range": 2 }
+  ]
+}

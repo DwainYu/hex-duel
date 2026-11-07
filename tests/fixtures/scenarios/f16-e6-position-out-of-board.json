@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f16-e6-position-out-of-board",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 8, "row": 1 } },
+    { "unitId": "u2", "unitDefId": "archer", "side": "red", "position": { "col": 5, "row": 5 } }
+  ]
+}

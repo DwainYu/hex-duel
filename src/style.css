@@ -1,0 +1,5 @@
+/* T1 占位样式：真实界面样式在 T3（MVP-1）实现。 */
+body {
+  margin: 0;
+  font-family: system-ui, "Microsoft YaHei", sans-serif;
+}

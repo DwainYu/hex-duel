@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f16-e5-position-occupied",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 3, "row": 3 } },
+    { "unitId": "u2", "unitDefId": "archer", "side": "red", "position": { "col": 3, "row": 3 } }
+  ]
+}
