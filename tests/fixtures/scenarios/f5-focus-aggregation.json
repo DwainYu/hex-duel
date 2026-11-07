@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f5-focus-aggregation",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 2, "row": 2 } },
+    { "unitId": "u2", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 4, "row": 2 } },
+    { "unitId": "r1", "unitDefId": "gale-swordsman", "side": "red", "position": { "col": 3, "row": 2 } }
+  ]
+}

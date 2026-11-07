@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f1-initial-engagement",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 2, "row": 2 } },
+    { "unitId": "r1", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 3, "row": 2 } }
+  ]
+}

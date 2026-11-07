@@ -18,13 +18,14 @@
 //
 // 实施阶段（Issue #6，检查点在提交说明留痕）：
 // 阶段 1（33e30a8）：Simulation State、tick 快照、行动顺序——状态推进确定性。
-// 阶段 2（本提交）：目标选择、路线、移动节奏、争格——决策两遍扫描 + 移动结算。
-// 阶段 3：攻击 / 冷却 / 伤害汇总 / 死亡 / 目标更新。
+// 阶段 2（c716889）：目标选择、路线、移动节奏、争格——决策两遍扫描 + 移动结算。
+// 阶段 3（本提交）：攻击 / 冷却 / 伤害汇总 / 死亡 / 目标更新——已提交攻击必中。
 // 阶段 4：wipeout / timeout / 平局补全测试 + 事件排序检查。
 // 阶段 5：F1–F14 × I1–I10 全量不变量与确定性双跑。
 import { hexDistance, type AxialCoord } from "./coordinates.ts";
 import type { BattleEndedEvent, BattleEvent } from "./events.ts";
 import { buildInitialState, type SimUnit, type SimulationState } from "./state.ts";
+import { compareUnitIds } from "./snapshot.ts";
 import { resolveTargetAndRoute } from "./targeting.ts";
 import type { Rules, Side, SimulationInput } from "./types.ts";
 import { requireValidSimulationInput } from "./validate.ts";
@@ -59,6 +60,15 @@ interface MoveIntent {
   unitId: string;
   from: AxialCoord;
   to: AxialCoord;
+}
+
+/**
+ * 第二遍产出的攻击提交（规格"已提交攻击必中"：基于 tick 开始的有效目标状态提交，
+ * 目标在同 tick 移开或被其他攻击致死仍命中并计入伤害——提交与结算解耦）。
+ */
+interface AttackSubmission {
+  attackerId: string;
+  targetId: string;
 }
 
 function cellKey(cell: AxialCoord): string {
@@ -98,17 +108,20 @@ export function simulate(input: SimulationInput): BattleEvent[] {
     }
     // 第二遍（行动遍历）：四态决策表（攻击 / 等待 / 移动 / 等待）——每棋子每 tick 至多一个动作。
     const moveIntents: MoveIntent[] = [];
+    const attackSubmissions: AttackSubmission[] = [];
     for (const unit of state.units) {
       if (!unit.alive) continue;
       const outcome = outcomes.get(unit.unitId);
       if (!outcome) continue; // 防御性：第一遍已为全部存活单位产出
-      decideAction(unit, outcome, state, occupiedAtTickStart, tick, moveIntents);
+      decideAction(unit, outcome, state, occupiedAtTickStart, tick, moveIntents, attackSubmissions);
     }
 
     // ---- 结算期（统一落账）----
     applyTargetOutcomes(state, outcomes, tick, events);
     settleMoves(state, moveIntents, occupiedAtTickStart, input.rules.moveIntervalTicks, events);
-    // （阶段 3 接入：伤害汇总 → 死亡结算）
+    const damageByTarget = settleAttacks(state, attackSubmissions, events);
+    settleDamage(state, damageByTarget, events);
+    settleDeaths(state, events);
 
     // ---- 胜负检查（每 tick 结算完成后；wipeout 优先于 timeout）----
     const ended = checkVictory(state, input.rules);
@@ -209,6 +222,7 @@ function decideAction(
   occupiedAtTickStart: Set<string>,
   tick: number,
   moveIntents: MoveIntent[],
+  attackSubmissions: AttackSubmission[],
 ): void {
   const targetId = outcome.effectiveTargetId;
   if (targetId === null) return; // 无目标：本 tick 待机（I10）
@@ -216,8 +230,11 @@ function decideAction(
   if (!target) return; // 防御性：第一遍已保证存活目标存在
 
   if (hexDistance(unit.position, target.position) <= unit.range) {
-    // 攻击分支（阶段 3 接入）：射程内且冷却就绪 → 提交攻击；否则原地等待（不移动）。
-    // 阶段 2 暂无攻击结算：射程内一律等待。
+    // 攻击：目标在射程 且 N ≥ attackReadyTick → 提交攻击（已提交必中）；
+    //       N < attackReadyTick → 原地等待（不移动——攻击等待不重置移动节奏）。
+    if (tick >= unit.attackReadyTick) {
+      attackSubmissions.push({ attackerId: unit.unitId, targetId });
+    }
     return;
   }
   // 目标不在射程：按缓存路线取下一格（第一遍已刷新或保留）。
@@ -304,6 +321,89 @@ function settleMoves(
       unitId: unit.unitId,
       from: intent.from,
       to: intent.to,
+    });
+  }
+}
+
+/**
+ * 结算 3·攻击结算（规格 §结算顺序 2 前置）：按收集顺序（= actionOrder = unitId 升序）
+ * 产出 Attack 事件并推进攻击冷却（冷却从实际攻击后起算）；同时按目标聚合本 tick
+ * 全部已提交攻击的伤害（hpBefore 取 tick 开始 HP——伤害尚未落账）。
+ * 已提交攻击必中：不检查目标当前生死（提交基于 tick 开始状态，死亡在死亡结算才生效）。
+ */
+function settleAttacks(
+  state: SimulationState,
+  submissions: AttackSubmission[],
+  events: BattleEvent[],
+): Map<string, { hpBefore: number; totalDamage: number }> {
+  const damageByTarget = new Map<string, { hpBefore: number; totalDamage: number }>();
+  for (const submission of submissions) {
+    const attacker = state.units.find((candidate) => candidate.unitId === submission.attackerId);
+    if (!attacker || !attacker.alive) continue; // 防御性：决策与结算之间无死亡
+    pushEvent(events, {
+      type: "Attack",
+      tick: state.tick,
+      attackerId: attacker.unitId,
+      targetId: submission.targetId,
+      damage: attacker.ad,
+    });
+    attacker.attackReadyTick = state.tick + attacker.attackCooldownTicks;
+    const aggregated = damageByTarget.get(submission.targetId);
+    if (aggregated) {
+      aggregated.totalDamage += attacker.ad;
+    } else {
+      const target = state.units.find((candidate) => candidate.unitId === submission.targetId);
+      damageByTarget.set(submission.targetId, {
+        hpBefore: target ? target.hp : 0,
+        totalDamage: attacker.ad,
+      });
+    }
+  }
+  return damageByTarget;
+}
+
+/**
+ * 结算 4·伤害汇总（规格 §结算顺序 2）：每个受伤目标一条 HpChanged
+ * （每目标每 tick 至多一条，I9；键按 compareUnitIds 排序产出），并落账 HP。
+ */
+function settleDamage(
+  state: SimulationState,
+  damageByTarget: Map<string, { hpBefore: number; totalDamage: number }>,
+  events: BattleEvent[],
+): void {
+  const targetIds = [...damageByTarget.keys()].sort(compareUnitIds);
+  for (const targetId of targetIds) {
+    const aggregated = damageByTarget.get(targetId);
+    if (!aggregated) continue;
+    const target = state.units.find((candidate) => candidate.unitId === targetId);
+    if (!target || !target.alive) continue; // 防御性
+    const hpAfter = aggregated.hpBefore - aggregated.totalDamage;
+    target.hp = hpAfter;
+    pushEvent(events, {
+      type: "HpChanged",
+      tick: state.tick,
+      unitId: targetId,
+      hpBefore: aggregated.hpBefore,
+      totalDamage: aggregated.totalDamage,
+      hpAfter,
+    });
+  }
+}
+
+/**
+ * 结算 5·死亡结算（规格 §结算顺序 3）：hpAfter ≤ 0 → UnitDied，移出棋盘并释放占格
+ * （alive=false 自下一 tick 起不再阻挡/不再成为候选）；本 tick 无后续移动阶段，
+ * "释放的位置下一 tick 才可使用"由结算顺序结构性保证。
+ */
+function settleDeaths(state: SimulationState, events: BattleEvent[]): void {
+  for (const unit of state.units) {
+    if (!unit.alive || unit.hp > 0) continue;
+    unit.alive = false;
+    pushEvent(events, {
+      type: "UnitDied",
+      tick: state.tick,
+      unitId: unit.unitId,
+      position: unit.position,
     });
   }
 }

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f9-target-cleared-recovery",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 7, "row": 4 } },
+    { "unitId": "r1", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 6, "row": 4 } },
+    { "unitId": "r2", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 1, "row": 1 } },
+    { "unitId": "m1", "unitDefId": "medic", "side": "blue", "position": { "col": 2, "row": 1 } },
+    { "unitId": "m2", "unitDefId": "medic", "side": "blue", "position": { "col": 1, "row": 2 } }
+  ]
+}

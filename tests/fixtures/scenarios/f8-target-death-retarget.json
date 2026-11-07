@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f8-target-death-retarget",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "hunter", "side": "blue", "position": { "col": 1, "row": 1 } },
+    { "unitId": "u2", "unitDefId": "hunter", "side": "blue", "position": { "col": 4, "row": 1 } },
+    { "unitId": "u3", "unitDefId": "hunter", "side": "blue", "position": { "col": 4, "row": 2 } },
+    { "unitId": "u4", "unitDefId": "hunter", "side": "blue", "position": { "col": 5, "row": 2 } },
+    { "unitId": "r1", "unitDefId": "archer", "side": "red", "position": { "col": 5, "row": 1 } },
+    { "unitId": "r2", "unitDefId": "archer", "side": "red", "position": { "col": 4, "row": 3 } }
+  ]
+}

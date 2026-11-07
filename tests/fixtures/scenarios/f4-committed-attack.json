@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f4-committed-attack",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "ballista-gunner", "side": "blue", "position": { "col": 2, "row": 2 } },
+    { "unitId": "r1", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 6, "row": 2 } }
+  ]
+}
