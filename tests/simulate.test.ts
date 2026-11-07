@@ -27,7 +27,7 @@ import { simulate } from "../src/engine/simulate.ts";
 import { SimulationInputError } from "../src/engine/validate.ts";
 import type { SimulationInput } from "../src/engine/types.ts";
 import { defaultCatalog, defaultRules, loadScenarioFixture, rulesWith } from "./fixtures/loaders.ts";
-import { assertEventStructure } from "./helpers/invariants.ts";
+import { checkAllInvariants } from "./helpers/invariants.ts";
 
 function inputFor(scenarioName: string): SimulationInput {
   return {
@@ -727,7 +727,7 @@ describe("simulate：F13 双方同归平局（wipeout 优先）", () => {
   });
 });
 
-describe("simulate：事件结构不变量（I8 + 类别固定顺序，遍历全部夹具）", () => {
+describe("simulate：不变量 I1–I10（遍历全部夹具自动检查）", () => {
   const fixtureNames = [
     "valid-minimal",
     "f1-initial-engagement",
@@ -745,15 +745,15 @@ describe("simulate：事件结构不变量（I8 + 类别固定顺序，遍历全
   ];
 
   for (const fixtureName of fixtureNames) {
-    it(`${fixtureName}：sequence 连续 + 类别固定顺序 + 同类 unitId 升序`, () => {
-      assertEventStructure(simulate(inputFor(fixtureName)));
+    it(`${fixtureName}：I1–I10 全量过检（含 I5 确定性双跑）`, () => {
+      checkAllInvariants(inputFor(fixtureName));
     });
   }
 
-  it("f12（rules 覆盖 timeoutTicks=300）：同上结构不变量", () => {
+  it("f12（rules 覆盖 timeoutTicks=300）：I1–I10 全量过检", () => {
     const input = inputFor("f12-timeout-ratio");
     input.rules = rulesWith({ timeoutTicks: 300 });
-    assertEventStructure(simulate(input));
+    checkAllInvariants(input);
   });
 });
 
