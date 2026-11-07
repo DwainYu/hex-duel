@@ -26,6 +26,8 @@ export interface SimUnit extends UnitSnapshot {
   moveReadyTick: number;
   /** 当前目标；null = 无目标（初始 / TargetCleared 之后；每 tick 决策期静默重试分配）。 */
   targetId: string | null;
+  /** 是否曾分配过目标：TargetAssigned.reason 的 "initial"（仅首次）/"retarget"（其后）判据。 */
+  hasAssignedTarget: boolean;
   /**
    * 缓存路线：从当前位置到目标射程内合法空格的剩余路径（不含当前格；in-range 时为空）。
    * 坐标为引擎 axial (q, r)；成功移动后弹出一格。
@@ -67,6 +69,7 @@ export function buildInitialState(input: SimulationInput): SimulationState {
       attackReadyTick: 1,
       moveReadyTick: input.rules.moveIntervalTicks,
       targetId: null,
+      hasAssignedTarget: false,
       remainingPath: [],
     };
   });

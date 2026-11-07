@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f2-first-move-timing",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "archer", "side": "blue", "position": { "col": 2, "row": 2 } },
+    { "unitId": "r1", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 6, "row": 2 } }
+  ]
+}

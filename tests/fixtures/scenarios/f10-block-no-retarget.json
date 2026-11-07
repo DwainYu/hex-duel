@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f10-block-no-retarget",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "r1", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 1, "row": 1 } },
+    { "unitId": "u1", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 2, "row": 4 } },
+    { "unitId": "u2", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 3, "row": 5 } },
+    { "unitId": "w1", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 2, "row": 1 } }
+  ]
+}
