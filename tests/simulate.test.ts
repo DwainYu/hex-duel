@@ -27,6 +27,7 @@ import { simulate } from "../src/engine/simulate.ts";
 import { SimulationInputError } from "../src/engine/validate.ts";
 import type { SimulationInput } from "../src/engine/types.ts";
 import { defaultCatalog, defaultRules, loadScenarioFixture, rulesWith } from "./fixtures/loaders.ts";
+import { assertEventStructure } from "./helpers/invariants.ts";
 
 function inputFor(scenarioName: string): SimulationInput {
   return {
@@ -647,6 +648,112 @@ describe("simulate：F14 BFS 确定性（战斗化，复用 T2 输入夹具）",
 
   it("I5 确定性双跑（含 BFS 路径完全一致）", () => {
     assert.deepEqual(simulate(input), simulate(input));
+  });
+});
+
+describe("simulate：F12 超时比例判定（wipeout 优先于 timeout）", () => {
+  it("哨兵 vs 石墙卫士 300 tick 均未分胜负 → 整数交叉相乘判蓝方 timeout 胜", () => {
+    // u1 = 哨兵-盾卫（蓝，900hp/ad45/cd14）；r1 = 石墙卫士（红，1100hp/ad35/cd17）。
+    // u1 命中 22 次（1+14k ≤ 300，末击 t295）→ r1 剩 1100−990 = 110；
+    // r1 命中 18 次（1+17k ≤ 300，末击 t290）→ u1 剩 900−630 = 270。
+    // remB×initR = 270×1100 = 297000 > remR×initB = 110×900 = 99000 → 蓝方胜（timeout）。
+    const input = inputFor("f12-timeout-ratio");
+    input.rules = rulesWith({ timeoutTicks: 300 });
+    const events = simulate(input);
+    assert.deepEqual(attackTicksOf(events, "u1").length, 22);
+    assert.deepEqual(attackTicksOf(events, "r1").length, 18);
+    assert.equal(attackTicksOf(events, "u1").at(-1), 295);
+    assert.equal(attackTicksOf(events, "r1").at(-1), 290);
+    assert.equal(ofType(events, "UnitDied").length, 0, "双方均存活至超时");
+    const lastR1 = ofType(events, "HpChanged").filter((event) => event.unitId === "r1").at(-1);
+    const lastU1 = ofType(events, "HpChanged").filter((event) => event.unitId === "u1").at(-1);
+    assert.deepEqual(lastR1, {
+      type: "HpChanged", sequence: 83, tick: 295, unitId: "r1", hpBefore: 155, totalDamage: 45, hpAfter: 110,
+    });
+    assert.deepEqual(lastU1, {
+      type: "HpChanged", sequence: 81, tick: 290, unitId: "u1", hpBefore: 305, totalDamage: 35, hpAfter: 270,
+    });
+    assert.deepEqual(ofType(events, "BattleEnded"), [
+      { type: "BattleEnded", sequence: 84, tick: 300, result: "blue", reason: "timeout" },
+    ]);
+  });
+
+  it("镜像同构 + timeoutTicks=50 → 双方剩余 HP 比例相等 → timeout 平局", () => {
+    // F13 镜像几何（双疾风剑士）在 t91 才互杀；timeoutTicks=50 时各承 5 击（各剩 300），
+    // remB×initR = 300×650 = remR×initB → 平局。
+    const input = inputFor("f13-mutual-wipeout");
+    input.rules = rulesWith({ timeoutTicks: 50 });
+    const events = simulate(input);
+    assert.deepEqual(ofType(events, "UnitDied").length, 0);
+    assert.deepEqual(ofType(events, "BattleEnded"), [
+      { type: "BattleEnded", sequence: 24, tick: 50, result: "draw", reason: "timeout" },
+    ]);
+  });
+
+  it("I5 确定性双跑（含规则覆盖输入）", () => {
+    const input = inputFor("f12-timeout-ratio");
+    input.rules = rulesWith({ timeoutTicks: 300 });
+    assert.deepEqual(simulate(input), simulate(input));
+  });
+});
+
+describe("simulate：F13 双方同归平局（wipeout 优先）", () => {
+  it("镜像互杀：t91 第 10 轮齐射双双阵亡 → draw / wipeout", () => {
+    // 双疾风剑士贴脸（cd 均 10，齐射同步）：每轮各承 70，第 10 轮（t91）650−700 = −50
+    // 同时致死 → 双方同 tick 全灭 = 平局（规格 §结算顺序 4）。
+    const events = simulate(inputFor("f13-mutual-wipeout"));
+    assert.deepEqual(attackTicksOf(events, "u1"), [1, 11, 21, 31, 41, 51, 61, 71, 81, 91]);
+    assert.deepEqual(attackTicksOf(events, "r1"), [1, 11, 21, 31, 41, 51, 61, 71, 81, 91]);
+    const t91 = events.filter((event) => event.tick === 91);
+    assert.deepEqual(t91, [
+      atk(40, 91, "r1", "u1", 70),
+      atk(41, 91, "u1", "r1", 70),
+      hp(42, 91, "r1", 20, 70, -50),
+      hp(43, 91, "u1", 20, 70, -50),
+      died(44, 91, "r1", { q: 2, r: 1 }),
+      died(45, 91, "u1", { q: 1, r: 1 }),
+      ended(46, 91, "draw", "wipeout"),
+    ]);
+    assert.deepEqual(
+      ofType(events, "UnitDied").map((event) => event.unitId),
+      ["r1", "u1"],
+      "死亡事件按 unitId 升序",
+    );
+  });
+
+  it("I5 确定性双跑", () => {
+    const input = inputFor("f13-mutual-wipeout");
+    assert.deepEqual(simulate(input), simulate(input));
+  });
+});
+
+describe("simulate：事件结构不变量（I8 + 类别固定顺序，遍历全部夹具）", () => {
+  const fixtureNames = [
+    "valid-minimal",
+    "f1-initial-engagement",
+    "f2-first-move-timing",
+    "f4-committed-attack",
+    "f5-focus-aggregation",
+    "f6-contested-hex",
+    "f7-death-releases-cell",
+    "f8-target-death-retarget",
+    "f9-target-cleared-recovery",
+    "f10-block-no-retarget",
+    "f11-unreachable-next-candidate",
+    "f13-mutual-wipeout",
+    "f14-bfs-determinism",
+  ];
+
+  for (const fixtureName of fixtureNames) {
+    it(`${fixtureName}：sequence 连续 + 类别固定顺序 + 同类 unitId 升序`, () => {
+      assertEventStructure(simulate(inputFor(fixtureName)));
+    });
+  }
+
+  it("f12（rules 覆盖 timeoutTicks=300）：同上结构不变量", () => {
+    const input = inputFor("f12-timeout-ratio");
+    input.rules = rulesWith({ timeoutTicks: 300 });
+    assertEventStructure(simulate(input));
   });
 });
 
