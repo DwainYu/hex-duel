@@ -1,6 +1,10 @@
 // F16（规格 §Testing Decisions / §异常情况）：非法场景错误路径 E1–E9 全覆盖。
 // 测试接缝：validateSimulationInput 纯函数 —— SimulationInput 进、ValidationError[] 出（规格主接缝的输入侧）。
 // 预期错误码为独立事实来源：规格 §异常情况 错误明细表的九个触发条件。
+//
+// 双通道语义（主控审查裁定，2026-11-07）：
+// - 九码语义校验 → ValidationError[]（本文件 F16 部分）；
+// - 结构完整性 → TypeError（形状断言，规格九码无对应错误码，见 T1 修订交付报告映射建议）。
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -45,7 +49,6 @@ describe("F16：非法场景错误路径 E1–E9", () => {
   const f16Cases: { fixture: string; expectedCode: (typeof ALL_ERROR_CODES)[number] }[] = [
     { fixture: "f16-e1-missing-schema-version", expectedCode: "SCHEMA_VERSION_UNSUPPORTED" },
     { fixture: "f16-e1-unsupported-schema-version", expectedCode: "SCHEMA_VERSION_UNSUPPORTED" },
-    { fixture: "f16-e1-malformed-body", expectedCode: "SCHEMA_VERSION_UNSUPPORTED" },
     { fixture: "f16-e2-catalog-version-mismatch", expectedCode: "CATALOG_VERSION_MISMATCH" },
     { fixture: "f16-e3-duplicate-unit-id", expectedCode: "DUPLICATE_UNIT_ID" },
     { fixture: "f16-e4-unknown-unit-def", expectedCode: "UNKNOWN_UNIT_DEF" },
@@ -124,7 +127,6 @@ describe("校验：错误结构与聚合", () => {
     const allErrors: ValidationError[] = [
       "f16-e1-missing-schema-version",
       "f16-e1-unsupported-schema-version",
-      "f16-e1-malformed-body",
       "f16-e2-catalog-version-mismatch",
       "f16-e3-duplicate-unit-id",
       "f16-e4-unknown-unit-def",
@@ -141,7 +143,7 @@ describe("校验：错误结构与聚合", () => {
     e9RulesInput.rules = rulesWith({ moveIntervalTicks: 0 });
     allErrors.push(...validateSimulationInput(e9RulesInput));
 
-    assert.ok(allErrors.length >= 12);
+    assert.ok(allErrors.length >= 11);
     for (const error of allErrors) {
       assert.ok(
         (ALL_ERROR_CODES as readonly string[]).includes(error.code),
@@ -178,4 +180,91 @@ describe("校验：错误结构与聚合", () => {
       "scenario.units[0].position",
     );
   });
+});
+
+describe("形状断言：结构残缺输入以 TypeError 拒绝（不经 ValidationError 通道）", () => {
+  // 结构完整性在规格九码中没有对应错误码；映射建议见 T1 修订交付报告，
+  // 规格新增错误码（或扩展现有定义）之前，结构残缺一律走异常通道。
+  const shapeCases: { name: string; mutate: (input: SimulationInput) => void }[] = [
+    {
+      name: "场景文件缺 units（夹具 structure-missing-units.json，模拟手改/损坏的导入文件）",
+      mutate: (input) => {
+        input.scenario = loadScenarioFixture("structure-missing-units") as SimulationInput["scenario"];
+      },
+    },
+    {
+      name: "scenario 缺 scenarioId",
+      mutate: (input) => {
+        delete (input.scenario as unknown as Record<string, unknown>).scenarioId;
+      },
+    },
+    {
+      name: "scenario 缺 catalogVersion",
+      mutate: (input) => {
+        delete (input.scenario as unknown as Record<string, unknown>).catalogVersion;
+      },
+    },
+    {
+      name: "unit 缺 unitId",
+      mutate: (input) => {
+        delete (input.scenario.units[0] as unknown as Record<string, unknown>).unitId;
+      },
+    },
+    {
+      name: "unit 缺 position",
+      mutate: (input) => {
+        delete (input.scenario.units[0] as unknown as Record<string, unknown>).position;
+      },
+    },
+    {
+      name: "unit position.col 非数值",
+      mutate: (input) => {
+        (input.scenario.units[0]!.position as unknown as Record<string, unknown>).col = "2";
+      },
+    },
+    {
+      name: "input 缺 catalog（内部配置残缺）",
+      mutate: (input) => {
+        delete (input as unknown as Record<string, unknown>).catalog;
+      },
+    },
+    {
+      name: "input 缺 rules（内部配置残缺）",
+      mutate: (input) => {
+        delete (input as unknown as Record<string, unknown>).rules;
+      },
+    },
+    {
+      name: "catalog 缺 catalogVersion（内部配置残缺）",
+      mutate: (input) => {
+        delete (input.catalog as unknown as Record<string, unknown>).catalogVersion;
+      },
+    },
+    {
+      name: "catalog.units 非数组（内部配置残缺）",
+      mutate: (input) => {
+        (input.catalog as unknown as Record<string, unknown>).units = {};
+      },
+    },
+    {
+      name: "目录 unitDefId 重复（内部配置残缺）",
+      mutate: (input) => {
+        input.catalog.units.push({ ...input.catalog.units[0]! });
+      },
+    },
+    {
+      name: "目录 def 缺 name（内部配置残缺）",
+      mutate: (input) => {
+        delete (input.catalog.units[0] as unknown as Record<string, unknown>).name;
+      },
+    },
+  ];
+
+  for (const { name, mutate } of shapeCases) {
+    it(name, () => {
+      const input = inputFor("valid-minimal");
+      mutate(input);
+      assert.throws(() => validateSimulationInput(input), TypeError);
+    });
+  }
 });

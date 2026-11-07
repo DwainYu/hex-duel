@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
+    "test": "npm run typecheck && node --test --experimental-strip-types \"tests/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs"
   },

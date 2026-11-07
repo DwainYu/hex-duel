@@ -19,4 +19,4 @@
 
 ## APPROXIMATED 登记
 
-`rules.json` 的 `approximated` 字段登记 A1–A9 简化规则（APPROXIMATED：确定性近似，非真实 TFT 机制），与规格登记表逐条对应，可追溯、可替换。
+A1–A9 简化规则（APPROXIMATED：确定性近似，非真实 TFT 机制）的**完整定义唯一事实来源**为规格登记表：`docs/specs/playable-core.md` §APPROXIMATED 简化规则登记（可替换点）。`rules.json` 仅承载 `approximatedRulesRef` 追溯指针，不复制登记内容，避免双源漂移（主控审查裁定，2026-11-07）。

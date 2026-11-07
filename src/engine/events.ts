@@ -4,8 +4,9 @@
 // 约定：
 // - sequence：全局递增，从 1 开始，按产生顺序连续、不跳号（不变量 I8）。
 // - tick：整数 tick；BattleStarted 为 tick 0，决策事件从 tick 1 起。
-// - 位置字段（from / to / position / hexes）使用引擎内部 axial 坐标
-//   （GLOSSARY「格」：引擎内以 axial 坐标 (q, r) 表示；对外展示由 UI 转换）。
+// - 位置字段（from / to / position / hexes）一律使用引擎内部 axial 坐标 (q, r)
+//   （主控裁定 2026-11-07 明确；GLOSSARY「格」：引擎内以 axial 表示）。
+//   场景 JSON 对外继续使用 offset 坐标（col, row，1 基）；播放器/UI 展示前自行转换。
 import type { AxialCoord } from "./coordinates.ts";
 import type { Rules, Side } from "./types.ts";
 
@@ -43,7 +44,9 @@ export interface UnitMovedEvent {
   sequence: number;
   tick: number;
   unitId: string;
+  /** 起点，引擎 axial 坐标 (q, r)；场景 JSON 与编辑器展示用的 offset 坐标由 UI 层转换。 */
   from: AxialCoord;
+  /** 终点，引擎 axial 坐标 (q, r)。 */
   to: AxialCoord;
 }
 
@@ -74,6 +77,7 @@ export interface UnitDiedEvent {
   sequence: number;
   tick: number;
   unitId: string;
+  /** 死亡位置，引擎 axial 坐标 (q, r)。 */
   position: AxialCoord;
 }
 

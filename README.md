@@ -17,7 +17,7 @@
 | 命令 | 作用 |
 |---|---|
 | `npm run dev` | 启动 Vite 开发服务器 |
-| `npm test` | 运行全部测试（`node --test` 直接运行 TS 测试，原生 type stripping） |
+| `npm test` | 统一测试入口：先 `tsc --noEmit` 类型检查，再运行全部测试（`node --test` 直接运行 TS 测试，原生 type stripping）——typecheck 不会在日常测试中被遗漏 |
 | `npm run typecheck` | TypeScript 类型检查（`tsc --noEmit`） |
 | `npm run build` | 生产构建到 `dist/` |
 | `npm run preview` | 本地预览构建产物 |

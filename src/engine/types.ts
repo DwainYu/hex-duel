@@ -49,16 +49,14 @@ export interface Rules {
 }
 
 /**
- * rules.json 文件层结构：引擎 Rules + rulesVersion + APPROXIMATED 简化规则登记。
+ * rules.json 文件层结构：引擎 Rules + rulesVersion + APPROXIMATED 登记追溯指针。
  * rulesVersion 置于规则配置文件层，镜像 UnitCatalog.catalogVersion 的模式（T1 版本契约）。
+ * A1–A9 简化规则的完整定义唯一事实来源 = 规格登记表（docs/specs/playable-core.md）；
+ * 本文件层只承载追溯指针，不复制登记内容（主控审查裁定，2026-11-07）。
  */
 export interface RulesFile extends Rules {
   rulesVersion: string;
-  approximated: {
-    note: string;
-    ref: string;
-    items: { id: string; summary: string }[];
-  };
+  approximatedRulesRef: string;
 }
 
 export interface SimulationInput {
