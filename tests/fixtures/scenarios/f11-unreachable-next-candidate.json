@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f11-unreachable-next-candidate",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "r1", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 4, "row": 4 } },
+    { "unitId": "r2", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 7, "row": 1 } },
+    { "unitId": "u1", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 2, "row": 4 } },
+    { "unitId": "w1", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 5, "row": 4 } },
+    { "unitId": "w2", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 5, "row": 3 } },
+    { "unitId": "w3", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 4, "row": 3 } },
+    { "unitId": "w4", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 3, "row": 4 } },
+    { "unitId": "w5", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 4, "row": 5 } },
+    { "unitId": "w6", "unitDefId": "sentinel-shieldguard", "side": "blue", "position": { "col": 5, "row": 5 } }
+  ]
+}

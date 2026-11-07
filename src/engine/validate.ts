@@ -23,8 +23,12 @@ function err(code: ValidationErrorCode, path: string, message: string): Validati
   return { code, path, message };
 }
 
-/** 形状断言：结构完整性不满足即抛 TypeError（不进入 ValidationError 通道）。 */
-function assertShape(condition: boolean, path: string, message: string): void {
+/**
+ * 形状断言：结构完整性不满足即抛 TypeError（不进入 ValidationError 通道）。
+ * 断言函数签名（asserts condition）：调用点之后，条件表达式中的类型守卫收窄
+ * （isRecord / isNonEmptyString / isFiniteNumber / Array.isArray 等）继续生效。
+ */
+function assertShape(condition: unknown, path: string, message: string): asserts condition {
   if (!condition) {
     throw new TypeError(`输入结构非法（${path}）：${message}`);
   }
@@ -233,8 +237,9 @@ export function validateSimulationInput(input: SimulationInput): ValidationError
 
   // ---- E9：目录数值非法（规格字面：hp ≤ 0、ad < 0、attackSpeed ≤ 0、range < 0）----
   for (const [index, defRaw] of catalogUnits.entries()) {
-    const def: Record<string, unknown> = defRaw;
     const defPath = `catalog.units[${index}]`;
+    assertShape(isRecord(defRaw), defPath, "棋子定义必须为对象");
+    const def: Record<string, unknown> = defRaw;
     if (!isFiniteNumber(def.hp) || def.hp <= 0) {
       errors.push(
         err("INVALID_STATS", `${defPath}.hp`, `目录数值非法：hp 必须 > 0，实际 ${describeValue(def.hp)}`),
@@ -291,4 +296,37 @@ export function validateSimulationInput(input: SimulationInput): ValidationError
   }
 
   return errors;
+}
+
+/**
+ * SimulationInput 语义校验失败的异常通道：公共 API（previewInitial / T6 simulate）
+ * 的强制校验门（规格 §异常情况："执行前强制校验，失败即拒绝"）。
+ * 携带完整结构化 ValidationError[]（code / 中文 message / path），编辑器层 catch 后展示原文。
+ * 通道约定与 T1 裁定一致：结构残缺走 TypeError（形状断言），九码语义失败走本异常——
+ * 保持公共 API 成功签名纯净（PreviewResult / BattleEvent[]），失败形态由异常类型区分。
+ */
+export class SimulationInputError extends Error {
+  /** 全部语义校验错误（非空）。 */
+  readonly errors: ValidationError[];
+
+  constructor(errors: ValidationError[]) {
+    super(
+      `SimulationInput 校验失败（${errors.length} 项）：${errors
+        .map((error) => `${error.code}@${error.path}`)
+        .join("; ")}`,
+    );
+    this.name = "SimulationInputError";
+    this.errors = errors;
+  }
+}
+
+/**
+ * 强制校验门：无语义错误时静默通过，否则抛出携带 ValidationError[] 的 SimulationInputError。
+ * 结构残缺仍以 TypeError 抛出（assertShape 通道），调用方应一并 catch（T3 导入层同约定）。
+ */
+export function requireValidSimulationInput(input: SimulationInput): void {
+  const errors = validateSimulationInput(input);
+  if (errors.length > 0) {
+    throw new SimulationInputError(errors);
+  }
 }

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "scenarioId": "fixture-f14-bfs-determinism",
+  "catalogVersion": "1",
+  "units": [
+    { "unitId": "u1", "unitDefId": "gale-swordsman", "side": "blue", "position": { "col": 2, "row": 2 } },
+    { "unitId": "r1", "unitDefId": "sentinel-shieldguard", "side": "red", "position": { "col": 5, "row": 3 } }
+  ]
+}
