@@ -163,6 +163,68 @@ describe("previewInitial：t2-unreachable-walled 唯一候选不可达", () => {
   });
 });
 
+describe("previewInitial：focusCounts 原型键安全（回归，主控二审裁定）", () => {
+  // 对抗性场景内联构造（非规格编号夹具，不复制场景数据）：unitId 仅校验非空字符串
+  //（规格 E1–E9 无字符限制），"__proto__" / "constructor" 均为合法 unitId。
+  // focusCounts 的键来自目标 unitId——若用普通对象 `obj[key] ?? 0` 累加：
+  // "__proto__" 命中原型访问器静默丢键、"constructor" 读到继承的 Object 构造器。
+  // 几何：u1 贴脸 "__proto__"、u2 贴脸 "constructor"（各距 1，近战 in-range）。
+  function adversarialInput(): SimulationInput {
+    return {
+      scenario: {
+        schemaVersion: "1",
+        scenarioId: "test-focuscounts-proto-key-safety",
+        catalogVersion: "1",
+        units: [
+          { unitId: "u1", unitDefId: "gale-swordsman", side: "blue", position: { col: 4, row: 2 } },
+          { unitId: "u2", unitDefId: "gale-swordsman", side: "blue", position: { col: 4, row: 4 } },
+          { unitId: "__proto__", unitDefId: "sentinel-shieldguard", side: "red", position: { col: 5, row: 2 } },
+          { unitId: "constructor", unitDefId: "sentinel-shieldguard", side: "red", position: { col: 5, row: 4 } },
+        ],
+      },
+      catalog: defaultCatalog(),
+      rules: defaultRules(),
+    };
+  }
+
+  it("__proto__ 作为目标 unitId：成为 own property 并正确计数，原型未受污染", () => {
+    const result = previewInitial(adversarialInput());
+    assert.ok(
+      Object.hasOwn(result.focusCounts, "__proto__"),
+      "__proto__ 必须落为 focusCounts 的 own data property",
+    );
+    assert.equal(result.focusCounts["__proto__"], 1);
+    assert.equal(
+      Object.getPrototypeOf(result.focusCounts),
+      Object.prototype,
+      "focusCounts 原型必须仍是 Object.prototype（不得被改写）",
+    );
+  });
+
+  it("constructor 作为目标 unitId：正确计数，不读到继承的 Object 构造器", () => {
+    const result = previewInitial(adversarialInput());
+    assert.ok(
+      Object.hasOwn(result.focusCounts, "constructor"),
+      "constructor 必须落为 focusCounts 的 own data property",
+    );
+    assert.equal(result.focusCounts["constructor"], 1);
+    // 全量键值对照：对抗键与普通键同表共存，目标分配不受键名影响
+    assert.deepEqual(
+      Object.entries(result.focusCounts).sort((a, b) => (a[0] < b[0] ? -1 : 1)),
+      [
+        ["__proto__", 1],
+        ["constructor", 1],
+        ["u1", 1],
+        ["u2", 1],
+      ],
+    );
+    assert.ok(
+      result.targets.some((t) => t.unitId === "u1" && t.targetId === "__proto__"),
+      "目标分配须正常指向 __proto__",
+    );
+  });
+});
+
 describe("previewInitial：强制校验门与确定性", () => {
   it("非法输入抛 SimulationInputError，携带结构化 ValidationError[]（复用 T1 的 F16 夹具）", () => {
     const input = inputFor("f16-e7-empty-side");

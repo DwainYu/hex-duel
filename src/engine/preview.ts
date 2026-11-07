@@ -38,7 +38,8 @@ export interface RouteAssignment {
 export interface PreviewResult {
   targets: TargetAssignment[];
   routes: RouteAssignment[];
-  /** 被集火数量：每个被锁定目标 ← 锁定它的对方棋子数（GLOSSARY「被集火数量」）。 */
+  /** 被集火数量：每个被锁定目标 ← 锁定它的对方棋子数（GLOSSARY「被集火数量」）。
+   *  键为目标 unitId；键安全由 Map + Object.fromEntries 保证（own data property）。 */
   focusCounts: Record<string, number>;
   /** 模拟器结算顺序：全部 unitId 升序（compareUnitIds）【APPROXIMATED A9】，
    *  不代表真实 TFT 行动优先级。 */
@@ -59,7 +60,11 @@ export function previewInitial(input: SimulationInput): PreviewResult {
 
   const targets: TargetAssignment[] = [];
   const routes: RouteAssignment[] = [];
-  const focusCounts: Record<string, number> = {};
+  // focusCounts 必须经 Map 累加（主控裁定，2026-11-07）：unitId 仅校验非空字符串，
+  // 普通对象以 `obj[key] ?? 0` 累加时，键 "__proto__" 命中原型访问器（静默丢键）、
+  // "constructor" 读到继承的 Object 构造器——Object.fromEntries 以 own data property
+  // 落键，任意合法 unitId 均正确计数。
+  const focusMap = new Map<string, number>();
 
   for (const unit of snapshot.units) {
     const resolution = resolveTargetAndRoute(unit, snapshot);
@@ -72,7 +77,7 @@ export function previewInitial(input: SimulationInput): PreviewResult {
           ? { kind: "in-range" }
           : { kind: "path", hexes: resolution.route.hexes },
       });
-      focusCounts[resolution.targetId] = (focusCounts[resolution.targetId] ?? 0) + 1;
+      focusMap.set(resolution.targetId, (focusMap.get(resolution.targetId) ?? 0) + 1);
     } else {
       targets.push({ unitId: unit.unitId, targetId: null });
       routes.push({
@@ -83,6 +88,7 @@ export function previewInitial(input: SimulationInput): PreviewResult {
     }
   }
 
+  const focusCounts: Record<string, number> = Object.fromEntries(focusMap);
   const actionOrder = snapshot.units.map((unit) => unit.unitId); // 快照已按 unitId 升序
   return { targets, routes, focusCounts, actionOrder };
 }
